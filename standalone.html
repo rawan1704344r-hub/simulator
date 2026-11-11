@@ -1,0 +1,259 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>محاكي القيود المحاسبية</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: navy header band, then a single working column: scenario chips, statement, entry form beside a live T-account preview, result panel. */
+:root{
+  --bg:#F5F3EE; --surface:#FFFFFF; --ink:#1B2733; --mute:#5E6B78; --line:#E2DED3;
+  --hero-bg:#112B47; --hero-fg:#F5F3EE; --hero-mute:#B9C6D4;
+  --green:#1A705C; --green-soft:#E3F2EC; --on-green:#FFFFFF;
+  --gold:#B8832A; --gold-soft:#F7EBD0;
+  --red:#C0432F; --red-soft:#FBE9E5;
+  --font:"Tajawal","Segoe UI",Tahoma,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D2034; --surface:#15304D; --ink:#EEF1F4; --mute:#A9B6C4; --line:#2B4766;
+    --hero-bg:#081624; --hero-fg:#F5F3EE; --hero-mute:#9FB0C2;
+    --green:#5CC4A4; --green-soft:#143B38; --on-green:#0D2034;
+    --gold:#E3B65C; --gold-soft:#3A3020;
+    --red:#F08C7E; --red-soft:#4A2A2C; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D2034; --surface:#15304D; --ink:#EEF1F4; --mute:#A9B6C4; --line:#2B4766;
+  --hero-bg:#081624; --hero-fg:#F5F3EE; --hero-mute:#9FB0C2;
+  --green:#5CC4A4; --green-soft:#143B38; --on-green:#0D2034;
+  --gold:#E3B65C; --gold-soft:#3A3020;
+  --red:#F08C7E; --red-soft:#4A2A2C; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.7;margin:0}
+.band{background:var(--hero-bg);color:var(--hero-fg);padding-block:28px 26px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:980px;margin:0 auto}
+.band h1{font-size:clamp(26px,5vw,38px);line-height:1.25;margin:0 0 6px;font-weight:800;text-wrap:balance}
+.band p{margin:0;color:var(--hero-mute);max-width:60ch}
+.eyebrow{color:#F2D98A;font-weight:700;font-size:14px;letter-spacing:.04em;margin:0 0 8px}
+main{padding-block:22px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:inherit;font-size:15px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 16px;cursor:pointer;min-height:40px}
+.chip[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:var(--on-green);font-weight:700}
+.chip .tick{margin-inline-start:6px}
+.score{font-size:15px;color:var(--mute);font-variant-numeric:tabular-nums}
+.score b{color:var(--green);font-size:19px}
+.statement{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:16px}
+.statement small{display:block;color:var(--gold);font-weight:700;font-size:14px}
+.statement strong{font-size:22px;font-weight:800;line-height:1.5}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.panel h2{font-size:18px;margin:0 0 12px;font-weight:800}
+.row{display:grid;grid-template-columns:70px minmax(0,1fr) 120px;gap:10px;align-items:end;padding-block:10px;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.side{font-weight:800;font-size:18px;padding-bottom:7px}
+.side.dr{color:var(--green)} .side.cr{color:var(--gold)}
+label{display:block;font-size:13px;color:var(--mute);margin-bottom:2px}
+select,input{font:inherit;font-size:16px;width:100%;min-height:46px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+input{font-variant-numeric:tabular-nums;text-align:center}
+select:focus-visible,input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btn{font:inherit;font-weight:700;font-size:17px;border-radius:8px;min-height:48px;padding:8px 22px;cursor:pointer;border:1.5px solid var(--green)}
+.btn.primary{background:var(--green);color:var(--on-green)}
+.btn.ghost{background:transparent;color:var(--green)}
+.tacc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.t{text-align:center}
+.t .name{font-weight:800;min-height:1.7em;font-size:17px}
+.t .cols{display:grid;grid-template-columns:1fr 1fr;border-top:3px solid var(--ink);min-height:96px}
+.t .cols>div{padding:6px 4px;min-height:96px}
+.t .cols>div:first-child{border-inline-start:3px solid var(--ink)}
+.t .lbl{font-size:13px;color:var(--mute);display:block}
+.amt{display:inline-block;margin-top:6px;padding:2px 12px;border-radius:6px;font-weight:800;font-variant-numeric:tabular-nums;background:var(--green-soft);color:var(--green);border:1.5px solid var(--green)}
+.amt.cr{background:var(--gold-soft);color:var(--gold);border-color:var(--gold)}
+.sum{margin-top:14px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:15px;color:var(--mute);font-variant-numeric:tabular-nums}
+.sum b{color:var(--ink)}
+.sum .ok{color:var(--green);font-weight:700} .sum .no{color:var(--red);font-weight:700}
+.result{margin-top:16px;border-radius:10px;padding:18px 20px;border:1.5px solid var(--line);background:var(--surface)}
+.result.good{background:var(--green-soft);border-color:var(--green)}
+.result.bad{background:var(--red-soft);border-color:var(--red)}
+.result.info{background:var(--gold-soft);border-color:var(--gold)}
+.result h3{margin:0 0 6px;font-size:20px;font-weight:800}
+.result.good h3{color:var(--green)} .result.bad h3{color:var(--red)} .result.info h3{color:var(--gold)}
+.result p{margin:6px 0 0;max-width:68ch}
+.answer{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:16px}
+.answer b{font-weight:800}
+.rules{margin-top:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:560px){.rules{grid-template-columns:minmax(0,1fr)} .row{grid-template-columns:minmax(0,1fr) 110px} .side{grid-column:1/-1;padding-bottom:0}}
+.rule{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 16px;font-size:15px}
+.rule b{display:block;font-size:16px}
+.rule.d b{color:var(--green)} .rule.c b{color:var(--gold)}
+.foot{margin-top:18px;font-size:13.5px;color:var(--mute)}
+</style>
+</head><body><div dir="rtl" lang="ar">
+<header class="band"><div class="wrap">
+  <p class="eyebrow">مشروع تخصص المحاسبة</p>
+  <h1>محاكي القيود المحاسبية</h1>
+  <p>اقرأ العملية، اكتب القيد، ثم اضغط «تحقّق» ليبيّن لك المساعد موضع الخطأ وسببه.</p>
+</div></header>
+
+<main><div class="wrap">
+  <div class="top">
+    <div class="chips" id="chips" role="group" aria-label="اختر العملية"></div>
+    <div class="score">القيود الصحيحة: <b id="score">0</b> من <span id="total">6</span></div>
+  </div>
+
+  <div class="statement"><small id="sNum"></small><strong id="sText"></strong></div>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-entry">
+      <h2 id="h-entry">اكتب القيد</h2>
+      <div class="row">
+        <div class="side dr">مدين</div>
+        <div><label for="dAcc">الحساب</label><select id="dAcc"></select></div>
+        <div><label for="dAmt">المبلغ</label><input id="dAmt" inputmode="numeric" autocomplete="off"></div>
+      </div>
+      <div class="row">
+        <div class="side cr">دائن</div>
+        <div><label for="cAcc">الحساب</label><select id="cAcc"></select></div>
+        <div><label for="cAmt">المبلغ</label><input id="cAmt" inputmode="numeric" autocomplete="off"></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="check" type="button">تحقّق</button>
+        <button class="btn ghost" id="next" type="button">عملية أخرى</button>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-t">
+      <h2 id="h-t">قيدك على حسابات T</h2>
+      <div class="tacc" id="tacc"></div>
+      <div class="sum" id="sum"></div>
+    </section>
+  </div>
+
+  <div class="result" id="result" role="status" aria-live="polite"></div>
+
+  <div class="rules">
+    <div class="rule d"><b>يُسجَّل في المدين</b>زيادة الأصول (الصندوق، الأثاث، المدينون) وزيادة المصروفات (الإيجار، المشتريات)</div>
+    <div class="rule c"><b>يُسجَّل في الدائن</b>زيادة الالتزامات (الدائنون) والإيرادات (المبيعات) ورأس المال، ونقص الأصول</div>
+  </div>
+  <p class="foot">يعمل المحاكي مباشرة في المتصفح بدون تسجيل دخول أو رسوم. الشرح مبني على قواعد القيد المزدوج.</p>
+</div></main>
+
+<script>
+(function(){
+  var ACC = {
+    cash:{n:"الصندوق",t:"أصل"}, furn:{n:"الأثاث",t:"أصل"}, ar:{n:"المدينون",t:"أصل"},
+    sales:{n:"المبيعات",t:"إيراد"}, rent:{n:"مصروف الإيجار",t:"مصروف"}, buy:{n:"المشتريات",t:"مصروف"},
+    ap:{n:"الدائنون",t:"التزام"}, cap:{n:"رأس المال",t:"حقوق ملكية"}
+  };
+  var SC = [
+    {s:"شراء أثاث بمبلغ 5,000 ريال نقدًا", dr:"furn", cr:"cash", amt:5000,
+     dWhy:"الأثاث أصل زاد، وزيادة الأصل تُسجَّل مدينة", cWhy:"النقدية في الصندوق نقصت، ونقص الأصل يُسجَّل دائنًا"},
+    {s:"بيع بضاعة بمبلغ 3,000 ريال نقدًا", dr:"cash", cr:"sales", amt:3000,
+     dWhy:"النقدية دخلت الصندوق، فزاد الأصل ويُسجَّل مدينًا", cWhy:"المبيعات إيراد، وزيادة الإيراد تُسجَّل دائنة"},
+    {s:"دفع إيجار المحل بمبلغ 2,000 ريال نقدًا", dr:"rent", cr:"cash", amt:2000,
+     dWhy:"الإيجار مصروف زاد، وزيادة المصروف تُسجَّل مدينة", cWhy:"النقدية نقصت، ونقص الأصل يُسجَّل دائنًا"},
+    {s:"شراء بضاعة بمبلغ 4,000 ريال بالآجل", dr:"buy", cr:"ap", amt:4000,
+     dWhy:"المشتريات مصروف زاد، فتُسجَّل مدينة", cWhy:"الدفع مؤجل، فزاد الالتزام للموردين (الدائنون) ويُسجَّل دائنًا"},
+    {s:"تحصيل 1,500 ريال نقدًا من أحد العملاء", dr:"cash", cr:"ar", amt:1500,
+     dWhy:"النقدية دخلت الصندوق، فزاد الأصل ويُسجَّل مدينًا", cWhy:"دين العميل (المدينون) نقص، ونقص الأصل يُسجَّل دائنًا"},
+    {s:"إيداع المالك 10,000 ريال نقدًا رأس مال للمشروع", dr:"cash", cr:"cap", amt:10000,
+     dWhy:"النقدية دخلت الصندوق، فزاد الأصل ويُسجَّل مدينًا", cWhy:"رأس المال من حقوق الملكية، وزيادته تُسجَّل دائنة"}
+  ];
+  var cur = 0, solved = {};
+  var $ = function(id){return document.getElementById(id)};
+  var fmt = function(n){return n.toLocaleString("en-US")};
+  var order = ["cash","furn","ar","sales","rent","buy","ap","cap"];
+
+  function fillSelect(sel){
+    sel.innerHTML = '<option value="">اختر الحساب</option>' + order.map(function(k){
+      return '<option value="'+k+'">'+ACC[k].n+' ('+ACC[k].t+')</option>';
+    }).join("");
+  }
+  fillSelect($("dAcc")); fillSelect($("cAcc"));
+  $("total").textContent = SC.length;
+
+  function chips(){
+    $("chips").innerHTML = SC.map(function(_,i){
+      return '<button type="button" class="chip" data-i="'+i+'" aria-pressed="'+(i===cur)+'">عملية '+(i+1)+(solved[i]?'<span class="tick">✓</span>':'')+'</button>';
+    }).join("");
+    $("score").textContent = Object.keys(solved).length;
+  }
+  $("chips").addEventListener("click", function(e){
+    var b = e.target.closest(".chip"); if(!b) return;
+    load(+b.dataset.i);
+  });
+
+  function num(v){ return parseInt(String(v).replace(/[^0-9٠-٩]/g,"").replace(/[٠-٩]/g,function(d){return "٠١٢٣٤٥٦٧٨٩".indexOf(d)}),10) || 0; }
+
+  function tPreview(){
+    var dA=$("dAcc").value, cA=$("cAcc").value, dN=num($("dAmt").value), cN=num($("cAmt").value);
+    var names = [], seen = {};
+    [dA,cA].forEach(function(k){ if(k && !seen[k]){seen[k]=1;names.push(k);} });
+    var html = "";
+    if(!names.length){ html = '<div class="t" style="grid-column:1/-1;color:var(--mute)">اختر الحسابات لتظهر هنا</div>'; }
+    names.forEach(function(k){
+      var dv = (k===dA && dN) ? '<span class="amt">'+fmt(dN)+'</span>' : "";
+      var cv = (k===cA && cN) ? '<span class="amt cr">'+fmt(cN)+'</span>' : "";
+      html += '<div class="t"><div class="name">'+ACC[k].n+'</div><div class="cols"><div><span class="lbl">دائن</span>'+cv+'</div><div><span class="lbl">مدين</span>'+dv+'</div></div></div>';
+    });
+    $("tacc").innerHTML = html;
+    var bal = dN===cN && dN>0;
+    $("sum").innerHTML = '<span>مجموع المدين: <b>'+fmt(dN)+'</b></span><span>مجموع الدائن: <b>'+fmt(cN)+'</b></span>' +
+      (dN||cN ? (bal ? '<span class="ok">القيد متوازن ✓</span>' : '<span class="no">القيد غير متوازن</span>') : "");
+  }
+
+  function load(i, pre){
+    cur = i; var sc = SC[i];
+    $("sNum").textContent = "العملية "+(i+1)+" من "+SC.length;
+    $("sText").textContent = sc.s;
+    $("dAcc").value = pre ? pre.d : ""; $("cAcc").value = pre ? pre.c : "";
+    $("dAmt").value = pre ? pre.da : ""; $("cAmt").value = pre ? pre.ca : "";
+    $("result").className = "result info";
+    $("result").innerHTML = '<h3>جاهز لقيدك</h3><p>اختر الحساب المدين والحساب الدائن واكتب المبلغ، ثم اضغط «تحقّق».</p>';
+    chips(); tPreview();
+    if(pre) check();
+  }
+
+  function ans(sc){
+    return '<div class="answer"><b>القيد الصحيح:</b> من حـ/ '+ACC[sc.dr].n+' ('+fmt(sc.amt)+') إلى حـ/ '+ACC[sc.cr].n+' ('+fmt(sc.amt)+')</div>';
+  }
+  function show(cls, h, p, extra){
+    $("result").className = "result "+cls;
+    $("result").innerHTML = '<h3>'+h+'</h3><p>'+p+'</p>'+(extra||"");
+  }
+
+  function check(){
+    var sc = SC[cur], dA=$("dAcc").value, cA=$("cAcc").value, dN=num($("dAmt").value), cN=num($("cAmt").value);
+    if(!dA || !cA){ show("info","أكمل القيد","اختر الحساب المدين والحساب الدائن أولًا."); return; }
+    if(!dN || !cN){ show("info","أكمل القيد","اكتب المبلغ في الجانبين."); return; }
+    if(dA===cA){ show("bad","حساب مكرر","وضعت الحساب نفسه في المدين والدائن. كل قيد يتكوّن من حسابين مختلفين.", ans(sc)); return; }
+    if(dN!==cN){
+      show("bad","قيد غير متوازن","مجموع المدين "+fmt(dN)+" ومجموع الدائن "+fmt(cN)+". في القيد المزدوج يجب أن يتساوى الجانبان دائمًا.", ans(sc)); return;
+    }
+    if(dA===sc.cr && cA===sc.dr){
+      show("bad","عكست الجانبين","وضعت "+ACC[dA].n+" في المدين و"+ACC[cA].n+" في الدائن، والصحيح العكس. "+sc.dWhy+". "+sc.cWhy+".", ans(sc)); return;
+    }
+    var okD = dA===sc.dr, okC = cA===sc.cr;
+    if(!okD && !okC){
+      show("bad","الحسابان غير مناسبين للعملية","لا "+ACC[dA].n+" ولا "+ACC[cA].n+" يناسبان هذه العملية. فكّر: ما الذي زاد، وما الذي نقص؟ "+sc.dWhy+". "+sc.cWhy+".", ans(sc)); return;
+    }
+    if(!okD){ show("bad","الحساب المدين خطأ","الحساب المدين المطلوب هو "+ACC[sc.dr].n+" ("+ACC[sc.dr].t+"). "+sc.dWhy+".", ans(sc)); return; }
+    if(!okC){ show("bad","الحساب الدائن خطأ","الحساب الدائن المطلوب هو "+ACC[sc.cr].n+" ("+ACC[sc.cr].t+"). "+sc.cWhy+".", ans(sc)); return; }
+    if(dN!==sc.amt){ show("bad","المبلغ لا يطابق العملية","الحسابان صحيحان لكن مبلغ العملية "+fmt(sc.amt)+" ريال.", ans(sc)); return; }
+    solved[cur] = true; chips();
+    show("good","قيد صحيح ✓", sc.dWhy+". "+sc.cWhy+".");
+  }
+
+  $("check").addEventListener("click", check);
+  $("next").addEventListener("click", function(){ load((cur+1)%SC.length); });
+  ["dAcc","cAcc","dAmt","cAmt"].forEach(function(id){ $(id).addEventListener("input", tPreview); });
+  ["dAmt","cAmt"].forEach(function(id){ $(id).addEventListener("keydown", function(e){ if(e.key==="Enter") check(); }); });
+
+  // Opening state: the exact mistake from the presentation (debit and credit swapped).
+  load(0, {d:"cash", c:"furn", da:"5000", ca:"5000"});
+})();
+</script>
+</div>
+</body></html>
